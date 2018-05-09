@@ -78,11 +78,12 @@ impl Chat {
                         self.next_socket_index += 1;
 
                         self.connections.insert(token, Connection::new(socket, token));
+                        self.connections.get_mut(&token).unwrap().hello();
 
                         self.poll.register(
                             &self.connections[&token].socket,
                             token,
-                            Ready::readable(),
+                            self.connections[&token].event_set(),
                             PollOpt::edge() | PollOpt::oneshot()).unwrap();
                         println!("new connection {:?} from {:?}", token, addr);
                     }
@@ -140,6 +141,10 @@ impl Connection {
             nick: None,
             closed: false,
         }
+    }
+
+    fn hello(&mut self) {
+        self.write_line("Enter your nickname to join the server:");
     }
 
     fn handle(&mut self, poll: &mut Poll, event: Event, chat_events: &mut VecDeque<ChatEvent>) {
@@ -222,13 +227,15 @@ impl Connection {
     }
     
     fn reregister(&mut self, poll: &mut Poll) {
-        let event_set =
-            if self.write_buf.len() > 0 {
-                Ready::readable() | Ready::writable()
-            } else {
-                Ready::readable()
-            };
-        poll.reregister(&self.socket, self.token, event_set, PollOpt::oneshot()).unwrap();
+        poll.reregister(&self.socket, self.token, self.event_set(), PollOpt::oneshot()).unwrap();
+    }
+
+    fn event_set(&self) -> Ready {
+        if self.write_buf.len() > 0 {
+            Ready::readable() | Ready::writable()
+        } else {
+            Ready::readable()
+        }
     }
 
     fn is_closed(&self) -> bool {
