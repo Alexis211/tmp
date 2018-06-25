@@ -29,6 +29,8 @@ defmodule Cryptest.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [
+		{:salty, "~> 0.1.3", hex: :libsalty}
+	]
   end
 end

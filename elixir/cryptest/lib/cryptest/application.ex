@@ -12,6 +12,8 @@ defmodule Cryptest.Application do
     children = [
       # Starts a worker by calling: Cryptest.Worker.start_link(arg1, arg2, arg3)
       # worker(Cryptest.Worker, [arg1, arg2, arg3]),
+      { Task.Supervisor, name: Cryptest.ConnSupervisor },
+      { Task, fn -> Cryptest.TCPServer.accept(4044) end },
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
