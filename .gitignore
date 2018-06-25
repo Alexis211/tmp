@@ -1,2 +1,9 @@
 */target
+*/*/target
 *.swp
+_build
+_server
+_client
+_deps
+local
+*.native

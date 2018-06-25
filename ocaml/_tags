@@ -1,0 +1,2 @@
+<*.ml>: package(lwt_ppx), package(lwt.unix), package(lwt)
+<*.native>: package(lwt_ppx), package(lwt.unix), package(lwt)

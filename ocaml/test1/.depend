@@ -1,0 +1,4 @@
+_client/test1.cmo :
+_client/test1.cmx :
+_client/test1.cmo : _server/test1.type_mli
+_client/test1.cmx : _server/test1.type_mli
