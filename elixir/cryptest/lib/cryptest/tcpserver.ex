@@ -6,22 +6,22 @@ defmodule Cryptest.TCPServer do
   Starts accepting connections on the given `port`.
   """
   def accept(port) do
-    keypair = Box.keypair
-
     {:ok, socket} = :gen_tcp.listen(port,
                       [:binary, packet: 2, active: false, reuseaddr: true])
     Logger.info "Accepting connections on port #{port}"
-    loop_acceptor(socket, keypair)
+    loop_acceptor(socket)
   end
 
-  defp loop_acceptor(socket, keypair) do
+  defp loop_acceptor(socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = Task.Supervisor.start_child(Cryptest.ConnSupervisor, fn -> serve(client, keypair) end)
+    {:ok, pid} = Task.Supervisor.start_child(Cryptest.ConnSupervisor, fn -> serve(client) end)
     :ok = :gen_tcp.controlling_process(client, pid)
-    loop_acceptor(socket, keypair)
+    loop_acceptor(socket)
   end
 
-  defp serve(socket, {:ok, srv_pkey, srv_skey}) do
+  defp serve(socket) do
+    {:ok, srv_pkey, srv_skey} = Cryptest.Keypair.get
+
     :gen_tcp.send(socket, srv_pkey)  
     {:ok, cli_pkey} = :gen_tcp.recv(socket, 0)
 

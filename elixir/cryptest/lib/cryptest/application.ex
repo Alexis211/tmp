@@ -5,6 +5,7 @@ defmodule Cryptest.Application do
 
   use Application
 
+
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
@@ -12,6 +13,7 @@ defmodule Cryptest.Application do
     children = [
       # Starts a worker by calling: Cryptest.Worker.start_link(arg1, arg2, arg3)
       # worker(Cryptest.Worker, [arg1, arg2, arg3]),
+      Cryptest.Keypair,
       { Task.Supervisor, name: Cryptest.ConnSupervisor },
       { Task, fn -> Cryptest.TCPServer.accept(4044) end },
     ]
