@@ -16,7 +16,7 @@ defmodule Cryptest.Mixfile do
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
     [extra_applications: [:logger],
-     mod: {Cryptest.Application, []}]
+     mod: {Cryptest, []}]
   end
 
   # Dependencies can be Hex packages:
@@ -30,6 +30,8 @@ defmodule Cryptest.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
+        {:cowboy, "~> 1.1.2"},
+        {:plug, "~> 1.3.4"},
 		{:salty, "~> 0.1.3", hex: :libsalty}
 	]
   end

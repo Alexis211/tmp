@@ -3,16 +3,23 @@ defmodule Cryptest do
   Documentation for Cryptest.
   """
 
-  @doc """
-  Hello world.
+  use Application
 
-  ## Examples
+  def start(_type, _args) do
+    import Supervisor.Spec, warn: false
 
-      iex> Cryptest.hello
-      :world
+    # Define workers and child supervisors to be supervised
+    children = [
+      # Starts a worker by calling: Cryptest.Worker.start_link(arg1, arg2, arg3)
+      # worker(Cryptest.Worker, [arg1, arg2, arg3]),
+      Cryptest.Keypair,
+      { Task.Supervisor, name: Cryptest.ConnSupervisor },
+      { Task, fn -> Cryptest.TCPServer.accept(4044) end },
+    ]
 
-  """
-  def hello do
-    :world
+    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: Cryptest.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 end
