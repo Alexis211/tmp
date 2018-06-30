@@ -1,7 +1,11 @@
 defmodule Cryptest.TCPConn do
-  require GenServer
+  use GenServer
   require Salty.Box.Curve25519xchacha20poly1305, as: Box
   require Logger
+
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts)
+  end
 
   def init(state) do
     socket = state.socket
@@ -24,9 +28,9 @@ defmodule Cryptest.TCPConn do
     {:ok, {addr, port}} = :inet.peername socket
     Logger.info "New peer: #{cli_pkey} at #{addr}:#{port}"
 
-    :gen_tcp.setopts(socket, [active: true])
+    :inet.setopts(socket, [active: true])
 
-    { socket: socket,
+    %{ socket: socket,
       my_pkey: srv_pkey,
       my_skey: srv_skey,
       his_pkey: cli_pkey,
@@ -38,7 +42,7 @@ defmodule Cryptest.TCPConn do
 
   defp encode_pkt(pkt, pk, sk) do
     {:ok, n} = Salty.Random.buf Box.noncebytes
-    {:ok, msg} = Box.easy(msg, n, pk, sk)
+    {:ok, msg} = Box.easy(pkt, n, pk, sk)
     n <> msg
   end
 
@@ -52,10 +56,10 @@ defmodule Cryptest.TCPConn do
   defp send_msg(state, msg) do
     msgbin = :erlang.term_to_binary msg
     enc = encode_pkt(msgbin, state.conn_his_pkey, state.conn_my_skey)
-    :gentcp.send(state.socket, enc)
+    :gen_tcp.send(state.socket, enc)
   end
 
-  def handle_info({:tcp, socket, ip, port, raw_data}, state) do
+  def handle_info({:tcp, _socket, _ip, _port, raw_data}, state) do
     msg = decode_pkt(raw_data, state.conn_his_pkey, state.conn_my_skey)
     handle_packet(:erlang.binary_to_term(msg, {:safe}), state)
   end

@@ -13,7 +13,7 @@ defmodule Cryptest do
       # Starts a worker by calling: Cryptest.Worker.start_link(arg1, arg2, arg3)
       # worker(Cryptest.Worker, [arg1, arg2, arg3]),
       Cryptest.Keypair,
-      { Task.Supervisor, name: Cryptest.ConnSupervisor },
+      { DynamicSupervisor, name: Cryptest.ConnSupervisor, strategy: :one_for_one, restart: :temporary },
       { Task, fn -> Cryptest.TCPServer.accept(4044) end },
     ]
 

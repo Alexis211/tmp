@@ -13,7 +13,7 @@ defmodule Cryptest.TCPServer do
 
   defp loop_acceptor(socket) do
     {:ok, client} = :gen_tcp.accept(socket)
-    {:ok, pid} = Task.Supervisor.start_child(Cryptest.ConnSupervisor, Cryptest.TCPConn, {socket: client})
+    {:ok, pid} = DynamicSupervisor.start_child(Cryptest.ConnSupervisor, {Cryptest.TCPConn, %{socket: client}})
     :ok = :gen_tcp.controlling_process(client, pid)
     loop_acceptor(socket)
   end
