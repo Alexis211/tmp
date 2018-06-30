@@ -42,7 +42,9 @@ defmodule Cryptest.TCPConn do
         his_pkey: cli_pkey,
         conn_my_pkey: sess_pkey,
         conn_my_skey: sess_skey,
-        conn_his_pkey: cli_sess_pkey
+        conn_his_pkey: cli_sess_pkey,
+        addr: addr,
+        port: port
       }
 	  }
   end
@@ -66,9 +68,20 @@ defmodule Cryptest.TCPConn do
     :gen_tcp.send(state.socket, enc)
   end
 
-  def handle_info({:tcp, _socket, _ip, _port, raw_data}, state) do
+  def handle_info({:tcp, _socket, raw_data}, state) do
     msg = decode_pkt(raw_data, state.conn_his_pkey, state.conn_my_skey)
-    handle_packet(:erlang.binary_to_term(msg, {:safe}), state)
+    state2 = handle_packet(:erlang.binary_to_term(msg, [:safe]), state)
+    {:noreply, state}
+  end
+
+  def handle_info({:tcp_closed, _socket}, state) do
+    Logger.info "Disconnected: #{inspect state.his_pkey} at #{inspect state.addr}:#{state.port}"
+    exit(:normal)
+  end
+
+  def handle_cast({:send_msg, msg}, state) do
+    send_msg(state, msg)
+    {:noreply, state}
   end
 
   defp handle_packet(msg, state) do

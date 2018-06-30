@@ -26,9 +26,9 @@ defmodule Cryptest.TCPServer do
 
   def add_peer(ip, port) do
     {:ok, client} = :gen_tcp.connect(ip, port, [:binary, packet: 2, active: false])
-    IO.puts (inspect client)
     {:ok, pid} = DynamicSupervisor.start_child(Cryptest.ConnSupervisor, {Cryptest.TCPConn, %{socket: client}})
     :ok = :gen_tcp.controlling_process(client, pid)
+    pid
   end
 
 end
