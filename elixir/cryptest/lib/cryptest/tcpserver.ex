@@ -1,5 +1,11 @@
 defmodule Cryptest.TCPServer do
   require Logger
+  use Task, restart: :permanent
+
+  def start_link(port) do
+    Task.start_link(__MODULE__, :accept, [port])
+  end
+
 
   @doc """
   Starts accepting connections on the given `port`.
@@ -17,5 +23,13 @@ defmodule Cryptest.TCPServer do
     :ok = :gen_tcp.controlling_process(client, pid)
     loop_acceptor(socket)
   end
+
+  def add_peer(ip, port) do
+    {:ok, client} = :gen_tcp.connect(ip, port, [:binary, packet: 2, active: false])
+    IO.puts (inspect client)
+    {:ok, pid} = DynamicSupervisor.start_child(Cryptest.ConnSupervisor, {Cryptest.TCPConn, %{socket: client}})
+    :ok = :gen_tcp.controlling_process(client, pid)
+  end
+
 end
 

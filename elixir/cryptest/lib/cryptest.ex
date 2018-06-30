@@ -8,13 +8,15 @@ defmodule Cryptest do
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
+    {listen_port, _} = Integer.parse ((System.get_env "PORT") || "4044")
+
     # Define workers and child supervisors to be supervised
     children = [
       # Starts a worker by calling: Cryptest.Worker.start_link(arg1, arg2, arg3)
       # worker(Cryptest.Worker, [arg1, arg2, arg3]),
       Cryptest.Keypair,
-      { DynamicSupervisor, name: Cryptest.ConnSupervisor, strategy: :one_for_one, restart: :temporary },
-      { Task, fn -> Cryptest.TCPServer.accept(4044) end },
+      { DynamicSupervisor, strategy: :one_for_one, name: Cryptest.ConnSupervisor, restart: :temporary },
+      { Cryptest.TCPServer, listen_port },
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

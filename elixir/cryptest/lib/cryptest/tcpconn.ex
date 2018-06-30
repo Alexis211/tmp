@@ -1,13 +1,18 @@
 defmodule Cryptest.TCPConn do
-  use GenServer
+  use GenServer, restart: :temporary
   require Salty.Box.Curve25519xchacha20poly1305, as: Box
   require Logger
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts)
+  def start_link(state) do
+    GenServer.start_link(__MODULE__, state)
   end
 
   def init(state) do
+    GenServer.cast(self(), :handshake)
+  	{:ok, state}
+  end
+
+  def handle_cast(:handshake, state) do
     socket = state.socket
 
     {:ok, srv_pkey, srv_skey} = Cryptest.Keypair.get
@@ -26,18 +31,20 @@ defmodule Cryptest.TCPConn do
 
     # Connected
     {:ok, {addr, port}} = :inet.peername socket
-    Logger.info "New peer: #{cli_pkey} at #{addr}:#{port}"
+    Logger.info "New peer: #{inspect cli_pkey} at #{inspect addr}:#{port}"
 
     :inet.setopts(socket, [active: true])
 
-    %{ socket: socket,
-      my_pkey: srv_pkey,
-      my_skey: srv_skey,
-      his_pkey: cli_pkey,
-      conn_my_pkey: sess_pkey,
-      conn_my_skey: sess_skey,
-      conn_his_pkey: cli_sess_pkey
-    }
+    {:noreply,
+      %{ socket: socket,
+        my_pkey: srv_pkey,
+        my_skey: srv_skey,
+        his_pkey: cli_pkey,
+        conn_my_pkey: sess_pkey,
+        conn_my_skey: sess_skey,
+        conn_his_pkey: cli_sess_pkey
+      }
+	  }
   end
 
   defp encode_pkt(pkt, pk, sk) do
