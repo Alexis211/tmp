@@ -15,7 +15,7 @@ defmodule Cryptest do
       # Starts a worker by calling: Cryptest.Worker.start_link(arg1, arg2, arg3)
       # worker(Cryptest.Worker, [arg1, arg2, arg3]),
       Cryptest.Keypair,
-      { DynamicSupervisor, strategy: :one_for_one, name: Cryptest.ConnSupervisor, restart: :temporary },
+      { DynamicSupervisor, strategy: :one_for_one, name: Cryptest.ConnSupervisor },
       { Cryptest.TCPServer, listen_port },
     ]
 
