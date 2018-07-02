@@ -18,6 +18,8 @@ defmodule Cryptest do
       { Cryptest.MerkleList, [&Cryptest.MerkleList.cmp_ts_str/2, name: Cryptest.ChatLog] },
       { DynamicSupervisor, strategy: :one_for_one, name: Cryptest.ConnSupervisor },
       { Cryptest.TCPServer, listen_port },
+
+      Plug.Adapters.Cowboy.child_spec(:http, Cryptest.HTTPRouter, [], port: listen_port + 1000)
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
