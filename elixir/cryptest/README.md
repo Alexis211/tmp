@@ -1,19 +1,16 @@
 # Cryptest
 
-**TODO: Add description**
+Tests of peer-to-peer stuff. Right now it's a little chat application with replication of message history over peers. Nothing is secure, contrary to the name of the project.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `cryptest` to your list of dependencies in `mix.exs`:
+Download and install [Elixir](https://elixir-lang.org/).
 
-```elixir
-def deps do
-  [{:cryptest, "~> 0.1.0"}]
-end
+```
+mix deps.get
+mix compile
+mix run --no-halt
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/cryptest](https://hexdocs.pm/cryptest).
+P2P port is 4044 by default, can be changed by setting the `$PORT` environment variable. HTTP interface is on port `$PORT`+1000.
 
