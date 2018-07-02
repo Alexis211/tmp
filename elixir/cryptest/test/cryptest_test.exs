@@ -19,9 +19,8 @@ defmodule CryptestTest do
     sendmsg(socket, sess_pkey, cli_pkey, srv_skey)
     cli_sess_pkey = recvmsg(socket, cli_pkey, srv_skey)
 
-    sendmsg(socket, "World, hello!", cli_sess_pkey, sess_skey) 
-    hello = recvmsg(socket, cli_sess_pkey, sess_skey)
-    IO.puts(hello)
+    pkt = :erlang.binary_to_term(recvmsg(socket, cli_sess_pkey, sess_skey), [:safe])
+    IO.puts (inspect pkt)
   end
 
   defp sendmsg(sock, msg, pk, sk) do
@@ -36,5 +35,16 @@ defmodule CryptestTest do
     enc = binary_part(pkt, Box.noncebytes, (byte_size pkt) - Box.noncebytes)
     {:ok, msg} = Box.open_easy(enc, n, pk, sk)
     msg
+  end
+
+  test "merkle list" do
+    {:ok, pid} = GenServer.start(Cryptest.MerkleList, &Cryptest.MerkleList.cmp_ts_str/2)
+
+    {:ok, list, rt} = GenServer.call(pid, {:read, nil, nil})
+    assert list == []
+    assert rt == nil
+
+    GenServer.cast(pid, {:insert, {12, "aa, bb"}})
+    GenServer.cast(pid, {:insert_many, [{14, "qwerty"}, {8, "haha"}]})
   end
 end
