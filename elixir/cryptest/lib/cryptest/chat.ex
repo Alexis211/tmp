@@ -11,7 +11,7 @@ defmodule Cryptest.Chat do
   end
 
   def msg_callback({ts, nick, msg}) do
-    IO.puts "#{ts} <#{nick}> #{msg}"
+    IO.puts "#{ts |> DateTime.from_unix! |> DateTime.to_iso8601} <#{nick}> #{msg}"
   end
 
   def msg_cmp({ts1, nick1, msg1}, {ts2, nick2, msg2}) do

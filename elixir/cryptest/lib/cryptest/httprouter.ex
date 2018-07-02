@@ -36,7 +36,7 @@ defmodule Cryptest.HTTPRouter do
     {:ok, messages, _} = GenServer.call(Cryptest.ChatLog, {:read, nil, 42})
 
     msgtxt = messages
-    |> Enum.map(fn {ts, nick, msg} -> "#{ts} &lt;#{nick}&gt; #{msg}\n" end)
+    |> Enum.map(fn {ts, nick, msg} -> "#{ts |> DateTime.from_unix! |> DateTime.to_iso8601} &lt;#{nick}&gt; #{msg}\n" end)
 
     peerlist = Cryptest.ConnSupervisor
     |> DynamicSupervisor.which_children
