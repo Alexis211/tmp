@@ -12,10 +12,14 @@ defmodule Cryptest.TCPConn do
   	{:ok, state}
   end
 
+  def handle_call(:get_host_str, _from, state) do
+    {:reply, "#{to_string(:inet_parse.ntoa(state.addr))}:#{state.port}", state}
+  end
+
   def handle_cast(:handshake, state) do
     socket = state.socket
 
-    {:ok, srv_pkey, srv_skey} = Cryptest.Keypair.get
+    {srv_pkey, srv_skey} = Cryptest.Identity.get_keypair
     {:ok, sess_pkey, sess_skey} = Box.keypair
 
     # Exchange node public keys
@@ -109,12 +113,15 @@ defmodule Cryptest.TCPConn do
         end
         spawn_link(fn ->
           Process.sleep 1000
-          GenServer.cast(Cryptest.ChatLog, {:insert_many, list, fn {ts, msg} -> IO.puts msg end})
+          GenServer.cast(Cryptest.ChatLog, {:insert_many, list, &Cryptest.Chat.msg_callback/1})
         end)
     end
   end
 
   defp print_id(state) do
-    Base.encode16 (binary_part(state.his_pkey, 0, 8))
+    state.his_pkey
+    |> binary_part(0, 8)
+    |> Base.encode16
+    |> String.downcase
   end
 end

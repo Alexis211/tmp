@@ -12,12 +12,18 @@ defmodule Cryptest.HTTPRouter do
   end
 
   post "/" do
-    msg = {(System.os_time :seconds), conn.params["v"]}
-    GenServer.cast(Cryptest.ChatLog, {:insert, msg})
-
-    Cryptest.ConnSupervisor
-    |> DynamicSupervisor.which_children
-    |> Enum.each(fn {_, pid, _, _} -> GenServer.cast(pid, :init_push) end)
+    if Map.has_key?(conn.params, "msg") do
+      Cryptest.Chat.send(conn.params["msg"])
+    end
+    if Map.has_key?(conn.params, "nick") do
+      Cryptest.Identity.set_nickname(conn.params["nick"])
+    end
+    if Map.has_key?(conn.params, "peer") do
+      [ipstr, portstr] = String.split(conn.params["peer"], ":")
+      {:ok, ip} = :inet.parse_address (to_charlist ipstr)
+      {port, _} = Integer.parse portstr
+      Cryptest.TCPServer.add_peer(ip, port)
+    end
 
     main_page(conn)
   end
@@ -30,10 +36,18 @@ defmodule Cryptest.HTTPRouter do
     {:ok, messages, _} = GenServer.call(Cryptest.ChatLog, {:read, nil, 42})
 
     msgtxt = messages
-    |> Enum.map(fn {_ts, msg} -> "#{msg}\n" end)
+    |> Enum.map(fn {ts, nick, msg} -> "#{ts} &lt;#{nick}&gt; #{msg}\n" end)
+
+    peerlist = Cryptest.ConnSupervisor
+    |> DynamicSupervisor.which_children
+    |> Enum.map(fn {_, pid, _, _} -> "#{GenServer.call(pid, :get_host_str)}\n" end)
 
     conn
     |> put_resp_content_type("text/html")
-    |> send_resp(200, "<pre>#{msgtxt}</pre><form method=POST><input type=text name=v /><input type=submit value=send /></form>")
+    |> send_resp(200, "<pre>#{msgtxt}</pre>" <>
+                      "<form method=POST><input type=text name=msg /><input type=submit value=send /></form>" <>
+                      "<form method=POST><input type=text name=nick value=\"#{Cryptest.Identity.get_nickname}\" /><input type=submit value=\"change nick\" /></form>" <>
+                      "<hr/><pre>#{peerlist}</pre>" <>
+                      "<form method=POST><input type=text name=peer /><input type=submit value=\"add peer\" /></form>")
   end
 end

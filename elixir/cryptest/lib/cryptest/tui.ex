@@ -9,22 +9,19 @@ defmodule Cryptest.TUI do
         handle_command(command)
         run()
       true -> 
-        send_msg(str)
+        Cryptest.Chat.send(str)
         run()
     end
-  end
-
-  def send_msg(str) do
-    GenServer.cast(Cryptest.ChatLog, {:insert, {(System.os_time :seconds), str}})
-    Cryptest.ConnSupervisor
-    |> DynamicSupervisor.which_children
-    |> Enum.each(fn {_, pid, _, _} -> GenServer.cast(pid, :init_push) end)
   end
 
   def handle_command(["connect", ipstr, portstr]) do
     {:ok, ip} = :inet.parse_address (to_charlist ipstr)
     {port, _} = Integer.parse portstr
     Cryptest.TCPServer.add_peer(ip, port)
+  end
+
+  def handle_command(["nick", nick]) do
+    Cryptest.Identity.set_nickname nick
   end
 
   def handle_command(_cmd) do
