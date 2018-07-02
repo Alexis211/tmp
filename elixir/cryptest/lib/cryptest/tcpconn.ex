@@ -30,13 +30,10 @@ defmodule Cryptest.TCPConn do
     cli_sess_pkey = decode_pkt(pkt, cli_pkey, srv_skey)
 
     # Connected
-    {:ok, {addr, port}} = :inet.peername socket
-    Logger.info "New peer: #{inspect cli_pkey} at #{inspect addr}:#{port}"
-
     :inet.setopts(socket, [active: true])
 
-    {:noreply,
-      %{ socket: socket,
+    {:ok, {addr, port}} = :inet.peername socket
+    state =%{ socket: socket,
         my_pkey: srv_pkey,
         my_skey: srv_skey,
         his_pkey: cli_pkey,
@@ -46,7 +43,21 @@ defmodule Cryptest.TCPConn do
         addr: addr,
         port: port
       }
-	  }
+    Logger.info "New peer: #{print_id state} at #{inspect addr}:#{port}"
+
+    GenServer.cast(self(), :init_sync)
+
+    {:noreply, state}
+  end
+
+  def handle_cast({:send_msg, msg}, state) do
+    send_msg(state, msg)
+    {:noreply, state}
+  end
+
+  def handle_cast(:init_sync, state) do
+    init_sync(state)
+    {:noreply, state}
   end
 
   defp encode_pkt(pkt, pk, sk) do
@@ -70,22 +81,48 @@ defmodule Cryptest.TCPConn do
 
   def handle_info({:tcp, _socket, raw_data}, state) do
     msg = decode_pkt(raw_data, state.conn_his_pkey, state.conn_my_skey)
-    state2 = handle_packet(:erlang.binary_to_term(msg, [:safe]), state)
+    handle_packet(:erlang.binary_to_term(msg, [:safe]), state)
     {:noreply, state}
   end
 
   def handle_info({:tcp_closed, _socket}, state) do
-    Logger.info "Disconnected: #{inspect state.his_pkey} at #{inspect state.addr}:#{state.port}"
+    Logger.info "Disconnected: #{print_id state} at #{inspect state.addr}:#{state.port}"
     exit(:normal)
   end
 
-  def handle_cast({:send_msg, msg}, state) do
-    send_msg(state, msg)
-    {:noreply, state}
-  end
 
   defp handle_packet(msg, state) do
-    Logger.info "Message: #{inspect msg}"
-    state
+    # Logger.info "Message: #{inspect msg}"
+    case msg do
+      {:top, top} ->
+        if GenServer.call(Cryptest.ChatLog, {:has, top}) do
+          Logger.info "Nothing new from #{print_id state}"
+        else
+          send_msg(state, {:get, top})
+        end
+      {:get, start} ->
+        case GenServer.call(Cryptest.ChatLog, {:read, start, 20}) do
+          {:ok, list, rest} ->
+            send_msg(state, {:info, start, list, rest})
+          _ -> nil
+        end
+      {:info, _start, list, rest} ->
+        if rest != nil and not GenServer.call(Cryptest.ChatLog, {:has, rest}) do
+          send_msg(state, {:get, rest})
+        end
+        spawn_link(fn ->
+          Process.sleep 1000
+          GenServer.cast(Cryptest.ChatLog, {:insert_many, list, fn {ts, msg} -> IO.puts msg end})
+        end)
+    end
+  end
+
+  def init_sync(state) do
+    top = GenServer.call(Cryptest.ChatLog, :top)
+    send_msg(state, {:top, top})
+  end
+
+  defp print_id(state) do
+    Base.encode16 (binary_part(state.his_pkey, 0, 8))
   end
 end
