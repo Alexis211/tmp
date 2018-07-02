@@ -45,7 +45,7 @@ defmodule Cryptest.TCPConn do
       }
     Logger.info "New peer: #{print_id state} at #{inspect addr}:#{port}"
 
-    GenServer.cast(self(), :init_sync)
+    GenServer.cast(self(), :init_push)
 
     {:noreply, state}
   end
@@ -55,8 +55,8 @@ defmodule Cryptest.TCPConn do
     {:noreply, state}
   end
 
-  def handle_cast(:init_sync, state) do
-    init_sync(state)
+  def handle_cast(:init_push, state) do
+    push_messages(state, nil, 10)
     {:noreply, state}
   end
 
@@ -90,22 +90,19 @@ defmodule Cryptest.TCPConn do
     exit(:normal)
   end
 
+  defp push_messages(state, start, num) do
+    case GenServer.call(Cryptest.ChatLog, {:read, start, num}) do
+      {:ok, list, rest} ->
+        send_msg(state, {:info, start, list, rest})
+      _ -> nil
+    end
+  end
 
   defp handle_packet(msg, state) do
     # Logger.info "Message: #{inspect msg}"
     case msg do
-      {:top, top} ->
-        if GenServer.call(Cryptest.ChatLog, {:has, top}) do
-          Logger.info "Nothing new from #{print_id state}"
-        else
-          send_msg(state, {:get, top})
-        end
-      {:get, start} ->
-        case GenServer.call(Cryptest.ChatLog, {:read, start, 20}) do
-          {:ok, list, rest} ->
-            send_msg(state, {:info, start, list, rest})
-          _ -> nil
-        end
+      :get_top -> push_messages(state, nil, 10)
+      {:get, start} -> push_messages(state, start, 20)
       {:info, _start, list, rest} ->
         if rest != nil and not GenServer.call(Cryptest.ChatLog, {:has, rest}) do
           send_msg(state, {:get, rest})
@@ -115,11 +112,6 @@ defmodule Cryptest.TCPConn do
           GenServer.cast(Cryptest.ChatLog, {:insert_many, list, fn {ts, msg} -> IO.puts msg end})
         end)
     end
-  end
-
-  def init_sync(state) do
-    top = GenServer.call(Cryptest.ChatLog, :top)
-    send_msg(state, {:top, top})
   end
 
   defp print_id(state) do

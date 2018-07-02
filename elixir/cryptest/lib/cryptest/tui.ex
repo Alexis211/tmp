@@ -18,7 +18,7 @@ defmodule Cryptest.TUI do
     GenServer.cast(Cryptest.ChatLog, {:insert, {(System.os_time :seconds), str}})
     Cryptest.ConnSupervisor
     |> DynamicSupervisor.which_children
-    |> Enum.each(fn {_, pid, _, _} -> GenServer.cast(pid, :init_sync) end)
+    |> Enum.each(fn {_, pid, _, _} -> GenServer.cast(pid, :init_push) end)
   end
 
   def handle_command(["connect", ipstr, portstr]) do
