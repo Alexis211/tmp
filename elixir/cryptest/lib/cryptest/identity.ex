@@ -1,13 +1,13 @@
 defmodule Cryptest.Identity do
-  require Salty.Box.Curve25519xchacha20poly1305, as: Box
   use Agent
+  require Salty.Sign.Ed25519, as: Sign
 
   def start_link(_) do
     Agent.start_link(__MODULE__, :init, [], name: __MODULE__)
   end
 
   def init() do
-    {:ok, pk, sk} = Box.keypair
+    {:ok, pk, sk} = Sign.keypair
     nick_suffix = pk
                   |> binary_part(0, 3)
                   |> Base.encode16

@@ -1,6 +1,7 @@
 defmodule Cryptest.TCPConn do
   use GenServer, restart: :temporary
   require Salty.Box.Curve25519xchacha20poly1305, as: Box
+  require Salty.Sign.Ed25519, as: Sign
   require Logger
 
   def start_link(state) do
@@ -21,17 +22,23 @@ defmodule Cryptest.TCPConn do
 
     {srv_pkey, srv_skey} = Cryptest.Identity.get_keypair
     {:ok, sess_pkey, sess_skey} = Box.keypair
+    {:ok, challenge} = Salty.Random.buf 32
 
-    # Exchange node public keys
-    :gen_tcp.send(socket, srv_pkey)  
-    {:ok, cli_pkey} = :gen_tcp.recv(socket, 0)
+    # Exchange public keys and challenge
+    :gen_tcp.send(socket, srv_pkey <> sess_pkey <> challenge)  
+    {:ok, pkt} = :gen_tcp.recv(socket, 0)
+    cli_pkey = binary_part(pkt, 0, Sign.publickeybytes)
+    cli_sess_pkey = binary_part(pkt, Sign.publickeybytes, Box.publickeybytes)
+    cli_challenge = binary_part(pkt, Sign.publickeybytes + Box.publickeybytes, 32)
 
-    # Exchange session public keys
-    pkt = encode_pkt(sess_pkey, cli_pkey, srv_skey)
+    # Do challenge and check their challenge
+    {:ok, cli_challenge_sign} = Sign.sign_detached(cli_challenge, srv_skey)
+    pkt = encode_pkt(cli_challenge_sign, cli_sess_pkey, sess_skey)
     :gen_tcp.send(socket, pkt)
 
     {:ok, pkt} = :gen_tcp.recv(socket, 0)
-    cli_sess_pkey = decode_pkt(pkt, cli_pkey, srv_skey)
+    challenge_sign = decode_pkt(pkt, cli_sess_pkey, sess_skey)
+    :ok = Sign.verify_detached(challenge_sign, challenge, cli_pkey)
 
     # Connected
     :inet.setopts(socket, [active: true])
