@@ -14,7 +14,7 @@ defmodule Cryptest.TCPConn do
   end
 
   def handle_call(:get_host_str, _from, state) do
-    {:reply, "#{to_string(:inet_parse.ntoa(state.addr))}:#{state.port}", state}
+    {:reply, "#{state.his_pkey|>Base.encode16|>String.downcase}@#{to_string(:inet_parse.ntoa(state.addr))}:#{state.port}", state}
   end
 
   def handle_cast(:handshake, state) do
