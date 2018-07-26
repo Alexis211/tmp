@@ -1,0 +1,5 @@
+%{
+  "bencodex": {:hex, :bencodex, "1.0.0", "26c4284572b7d8ae5d42ac06f995b5193420fac4ab3866eb5fb20b73dc0310a1", [:mix], [], "hexpm"},
+  "krpc_protocol": {:hex, :krpc_protocol, "0.0.4", "e9e71ef30235dc2e0dcb14ae47134c1812a3b0a0b99d69bb46d6055c69eb6c5e", [:mix], [{:bencodex, "~> 1.0.0", [hex: :bencodex, repo: "hexpm", optional: false]}], "hexpm"},
+  "mldht": {:hex, :mldht, "0.0.1", "65095c3a3a2b3437970639f1bae78e0f9c2238afbb5c9ab47aacbfa21883c328", [:mix], [{:bencodex, "~> 1.0.0", [hex: :bencodex, repo: "hexpm", optional: false]}, {:krpc_protocol, "~> 0.0.2", [hex: :krpc_protocol, repo: "hexpm", optional: false]}], "hexpm"},
+}
